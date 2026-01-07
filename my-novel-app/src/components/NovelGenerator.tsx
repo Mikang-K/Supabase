@@ -1,182 +1,205 @@
 // src/components/NovelGenerator.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { Sparkles, UserPlus, Settings2 } from 'lucide-react';
+import { Sparkles, Users, Tag, Type, Clock, UserPlus, X, Filter } from 'lucide-react';
 
-export default function NovelGenerator({ characters, scenarios, userId }: any) {
-  const [useCustomMode, setUseCustomMode] = useState(false); // 직접 입력 모드 여부
-  const [selectedChars, setSelectedChars] = useState<string[]>([]);
-  const [selectedScen, setSelectedScen] = useState('');
+export default function NovelGenerator({ characters, userId }: any) {
+  const router = useRouter();
+  const [selectedChars, setSelectedChars] = useState<any[]>([]);
+  const [manualChars, setManualChars] = useState<string[]>([]);
+  const [charInput, setCharInput] = useState('');
   
-  // 직접 입력 상태
-  const [customChars, setCustomChars] = useState('');
-  const [customScen, setCustomScen] = useState('');
-  
-  const [genre, setGenre] = useState('로맨스 판타지');
-  const [plotNotes, setPlotNotes] = useState('');
+  // 탭 관련 상태 (3D, 2D, CUSTOM, MANUAL)
+  const [activeTab, setActiveTab] = useState<'3D' | '2D' | 'CUSTOM' | 'MANUAL'>('3D');
+
+  const [userTitle, setUserTitle] = useState('');
+  const [relationshipDesc, setRelationshipDesc] = useState('');
+  const [genreDesc, setGenreDesc] = useState('');
+  const [totalEpisodes, setTotalEpisodes] = useState(20);
   const [loading, setLoading] = useState(false);
-  const [storyData, setStoryData] = useState({ id: null, title: '', summary: '' });
-  const [contents, setContents] = useState<string[]>([]);
 
-  const supabase = createClient();
+  // 대분류 필터링 로직
+  const filteredCharacters = useMemo(() => {
+    return characters.filter((c: any) => c.category === activeTab);
+  }, [characters, activeTab]);
 
-  const handleGenerate = async (mode: 'generate' | 'continue' | 'regenerate' = 'generate') => {
-    if (!useCustomMode && (selectedChars.length === 0 || !selectedScen)) return alert('캐릭터와 시나리오를 선택하세요!');
-    if (useCustomMode && (!customChars || !customScen)) return alert('설정 내용을 상세히 입력해주세요!');
+  const addManualCharacter = () => {
+    if (charInput.trim() && !manualChars.includes(charInput.trim())) {
+      setManualChars([...manualChars, charInput.trim()]);
+      setCharInput('');
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (selectedChars.length === 0 && manualChars.length === 0) return alert('등장인물을 최소 한 명은 설정해 주세요.');
+    if (!genreDesc.trim()) return alert('집필 지침을 작성해 주세요.');
     
     setLoading(true);
+    const supabase = createClient();
+
     try {
       const { data, error } = await supabase.functions.invoke('generate-novel', {
         body: { 
-          character_ids: useCustomMode ? [] : selectedChars, 
-          scenario_id: useCustomMode ? null : selectedScen,
-          custom_characters: useCustomMode ? customChars : "",
-          custom_scenario: useCustomMode ? customScen : "",
           user_id: userId,
-          story_id: (mode === 'continue' || mode === 'regenerate') ? storyData.id : null,
-          mode,
-          plot_notes: plotNotes,
-          genre: genre
+          character_ids: selectedChars.map(c => c.id),
+          manual_characters: manualChars,
+          user_title: userTitle,
+          relationship_desc: relationshipDesc,
+          genre_desc: genreDesc,
+          total_episodes: totalEpisodes,
+          mode: 'generate',
         },
       });
 
+      console.log("=== Edge Function Full Response ===");
+      console.log("Data:", data);
+      console.log("Error:", error);
+
       if (error) throw error;
-      setStoryData({ id: data.story_id, title: data.title || storyData.title, summary: data.summary });
-      
-      if (mode === 'continue') setContents(prev => [...prev, data.content]);
-      else if (mode === 'regenerate') setContents(prev => [...prev.slice(0, -1), data.content]);
-      else setContents([data.content]);
+      router.push(`/stories/${data.story_id}`);
     } catch (err: any) {
-      alert(err.message);
+      alert(`집필 오류: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="space-y-10">
-      {/* 입력 방식 전환 */}
-      <div className="flex bg-slate-200 p-1 rounded-2xl w-fit">
-        <button 
-          onClick={() => setUseCustomMode(false)}
-          className={`px-6 py-2 rounded-xl text-sm font-bold transition ${!useCustomMode ? 'bg-white shadow-sm' : 'text-slate-500'}`}
-        >
-          기존 설정 선택
-        </button>
-        <button 
-          onClick={() => setUseCustomMode(true)}
-          className={`px-6 py-2 rounded-xl text-sm font-bold transition ${useCustomMode ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}
-        >
-          직접 상세 설정
-        </button>
+    <div className="space-y-10 max-w-5xl mx-auto pb-20">
+      {/* 상단 제목 및 설정 */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="md:col-span-3 space-y-2">
+          <label className="flex items-center gap-2 font-bold text-slate-700 text-sm ml-1 dark:text-slate-100">
+            <Type size={16} className="text-blue-500"/> 작품 제목
+          </label>
+          <input 
+            type="text"
+            className="w-full p-4 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-500 transition-all font-bold"
+            placeholder="미입력 시 AI가 제목을 생성합니다."
+            value={userTitle}
+            onChange={(e) => setUserTitle(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 font-bold text-slate-700 text-sm ml-1 dark:text-slate-100">
+            <Clock size={16} className="text-blue-500"/> 연재 목표
+          </label>
+          <select 
+            className="w-full p-4 bg-white border-2 border-slate-100 rounded-2xl font-bold outline-none cursor-pointer"
+            value={totalEpisodes}
+            onChange={(e) => setTotalEpisodes(Number(e.target.value))}
+          >
+            {[10, 20, 30, 50].map(v => <option key={v} value={v}>{v}화 완결</option>)}
+          </select>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-          {useCustomMode ? (
-            /* 직접 상세 입력 모드 */
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 font-bold text-slate-700">
-                  <UserPlus size={18} className="text-blue-500"/> 등장인물 상세 정의
-                </label>
-                <textarea 
-                  className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl h-40 outline-none focus:border-blue-400 transition-all"
-                  placeholder="예: 김철수(25세). 냉소적인 성격이지만 동생에게는 따뜻함. 거친 말투를 쓰지만 속은 여림. 검은 후드티를 즐겨 입음."
-                  value={customChars}
-                  onChange={(e) => setCustomChars(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 font-bold text-slate-700">
-                  <Settings2 size={18} className="text-blue-500"/> 배경 및 상황 상세 설정
-                </label>
-                <textarea 
-                  className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl h-40 outline-none focus:border-blue-400 transition-all"
-                  placeholder="예: 마법이 공존하는 현대 서울. 주인공은 퇴근길에 몬스터를 만나 각성하게 된다. 비가 쏟아지는 강남역 한복판이 배경."
-                  value={customScen}
-                  onChange={(e) => setCustomScen(e.target.value)}
-                />
-              </div>
-            </div>
-          ) : (
-            /* 기존 선택 모드 */
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
-              <div className="space-y-3">
-                <label className="font-bold text-slate-700">등장 인물 선택</label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {characters.map((c: any) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setSelectedChars(prev => prev.includes(c.id) ? prev.filter(id => id !== c.id) : [...prev, c.id])}
-                      className={`p-4 rounded-2xl border-2 font-bold transition-all text-sm ${selectedChars.includes(c.id) ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-slate-100 text-slate-400 hover:border-slate-200'}`}
-                    >
-                      {c.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-3">
-                <label className="font-bold text-slate-700">배경 시나리오</label>
-                <select className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none" onChange={(e) => setSelectedScen(e.target.value)}>
-                  <option value="">시나리오를 선택하세요</option>
-                  {scenarios.map((s: any) => <option key={s.id} value={s.id}>{s.title}</option>)}
-                </select>
-              </div>
-            </div>
-          )}
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* 통합 인물 설정 섹션 */}
+        <div className="lg:col-span-5 space-y-6 bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm">
+          <div className="space-y-4">
+            <label className="flex items-center gap-2 font-bold text-slate-700 text-sm ml-1">
+              <Users size={16} className="text-blue-500"/> 인물 설정
+            </label>
 
-        {/* 우측 공통 설정 패널 */}
-        <div className="space-y-6 bg-slate-900 p-8 rounded-3xl text-white shadow-xl h-fit">
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-400 uppercase tracking-widest">장르</label>
-            <select 
-              className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl outline-none focus:ring-2 ring-blue-500"
-              value={genre}
-              onChange={(e) => setGenre(e.target.value)}
-            >
-              {['판타지', '로맨스 판타지', '현대 판타지', '무협', '스릴러', 'SF', '사이버펑크'].map(g => <option key={g} value={g}>{g}</option>)}
-            </select>
+            {/* 탭 네비게이션 */}
+            <div className="flex bg-slate-100 p-1 rounded-2xl">
+              {(['3D', '2D', 'CUSTOM', 'MANUAL'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex-1 py-2 text-[11px] font-black rounded-xl transition-all ${
+                    activeTab === tab ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  {tab === 'MANUAL' ? '직접 작성' : tab}
+                </button>
+              ))}
+            </div>
+
+            {/* 탭 콘텐츠 영역 */}
+            <div className="min-h-[300px]">
+              {activeTab === 'MANUAL' ? (
+                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="relative">
+                    <textarea 
+                      className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs outline-none focus:border-blue-500 h-40 resize-none leading-relaxed" 
+                      placeholder="인물의 이름, 나이, 성격, 특징을 상세히 적어주세요.&#13;&#10;예: 한소희(23) - 차갑고 도도한 외모와 달리 길고양이에게 밥을 주는 따뜻한 심성의 소유자." 
+                      value={charInput}
+                      onChange={(e) => setCharInput(e.target.value)}
+                    />
+                    <button 
+                      onClick={addManualCharacter}
+                      className="absolute bottom-3 right-3 p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
+                    >
+                      <UserPlus size={16}/>
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {manualChars.map((name, i) => (
+                      <span key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-[11px] font-black">
+                        {name.split('(')[0]} 
+                        <X size={12} className="cursor-pointer hover:text-red-500" onClick={() => setManualChars(manualChars.filter((_, idx) => idx !== i))}/>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-1 animate-in fade-in duration-300">
+                  {filteredCharacters.length > 0 ? (
+                    filteredCharacters.map((c: any) => (
+                      <button
+                        key={c.id}
+                        onClick={() => setSelectedChars(prev => prev.find(item => item.id === c.id) ? prev.filter(item => item.id !== c.id) : [...prev, c])}
+                        className={`p-3 rounded-xl border-2 text-left transition-all ${
+                          selectedChars.find(item => item.id === c.id) ? 'border-blue-600 bg-blue-50' : 'border-slate-50 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="font-bold text-slate-800 text-xs truncate">{c.name}</div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="col-span-2 py-20 text-center text-slate-300 text-xs font-bold">해당 카테고리에 캐릭터가 없습니다.</div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-400 uppercase tracking-widest">Plot Notes</label>
+
+          <div className="pt-4 border-t border-slate-100">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">인물 관계 및 초기 설정</label>
             <textarea 
-              className="w-full p-4 bg-slate-800 border border-slate-700 rounded-xl h-24 resize-none outline-none focus:ring-2 ring-blue-500 text-sm"
-              placeholder="꼭 지켜야 할 비밀이나 복선을 적어주세요."
-              value={plotNotes}
-              onChange={(e) => setPlotNotes(e.target.value)}
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl h-24 outline-none focus:border-blue-500 text-xs"
+              placeholder="인물 간의 관계나 소설의 시작 상황을 입력하세요."
+              value={relationshipDesc}
+              onChange={(e) => setRelationshipDesc(e.target.value)}
             />
           </div>
+        </div>
+
+        {/* 집필 지침 섹션 */}
+        <div className="lg:col-span-7 space-y-6 bg-slate-900 p-8 rounded-[2.5rem] text-white flex flex-col min-h-[600px]">
+          <label className="text-sm font-black text-blue-400 flex items-center gap-2 uppercase tracking-wider">
+            <Tag size={18}/> 세계관 및 집필 지침
+          </label>
+          <textarea 
+            className="flex-1 w-full p-6 bg-slate-800 border-2 border-slate-700 rounded-[1.5rem] outline-none focus:border-blue-500 text-base leading-relaxed resize-none"
+            placeholder="장르, 문체, 분위기 등을 상세히 적어주세요. 많이 적을수록 고스트라이터가 당신의 의도를 정확히 파악합니다."
+            value={genreDesc}
+            onChange={(e) => setGenreDesc(e.target.value)}
+          />
           <button
-            onClick={() => handleGenerate('generate')}
-            disabled={loading}
-            className="w-full py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white font-black rounded-2xl transition shadow-lg flex items-center justify-center gap-2"
+            onClick={handleGenerate}
+            disabled={loading || !genreDesc.trim()}
+            className="w-full py-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-3xl transition shadow-xl flex items-center justify-center gap-3"
           >
-            {loading ? '시나리오 작성 중...' : <><Sparkles size={20}/> 첫 장면 생성</>}
+            {loading ? "고스트라이터가 집필 중..." : <><Sparkles size={20}/> 집필 시작하기</>}
           </button>
         </div>
       </div>
-
-      {/* 결과 섹션 (기존 코드와 동일하되 스타일링 살짝 개선) */}
-      {contents.length > 0 && (
-        <div className="animate-in zoom-in-95 duration-500 max-w-4xl mx-auto">
-          <div className="p-10 bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl space-y-8">
-            <h2 className="text-3xl font-black text-center text-slate-800">{storyData.title}</h2>
-            <div className="space-y-8 pt-6 border-t border-slate-100">
-              {contents.map((text, i) => (
-                <p key={i} className="text-xl text-slate-700 leading-[2] whitespace-pre-wrap">{text}</p>
-              ))}
-            </div>
-            <div className="flex gap-4 pt-10 border-t border-slate-100">
-              <button onClick={() => handleGenerate('continue')} className="flex-[3] py-5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:scale-[1.02] transition active:scale-95 shadow-lg">다음 내용 계속 쓰기</button>
-              <button onClick={() => handleGenerate('regenerate')} className="flex-1 py-5 border-2 border-slate-200 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 transition">다시 쓰기</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

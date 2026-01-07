@@ -3,6 +3,9 @@
     "supabase": "^2.70.5"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.89.0",
+    "framer-motion": "^12.24.7",
     "lucide-react": "^0.562.0",
     "next-themes": "^0.4.6"
   }

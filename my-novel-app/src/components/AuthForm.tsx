@@ -9,58 +9,90 @@ export default function AuthForm() {
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
 
-  // 회원가입 함수
-  const handleSignUp = async () => {
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({ 
-      email, 
-      password,
+  // 1. 소셜 로그인 핸들러 (구글, 카카오)
+  const handleSocialLogin = async (provider: 'google' | 'kakao') => {
+    await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
     });
-    if (error) alert(error.message);
-    else alert('회원가입 성공! 이제 로그인해 주세요.');
-    setLoading(false);
   };
 
-  // 로그인 함수
-  const handleLogin = async () => {
+  // 2. 이메일 회원가입/로그인 핸들러
+  const handleEmailAuth = async (type: 'LOGIN' | 'SIGNUP') => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = type === 'LOGIN' 
+      ? await supabase.auth.signInWithPassword({ email, password })
+      : await supabase.auth.signUp({ email, password });
+
     if (error) alert(error.message);
+    else if (type === 'SIGNUP') alert('인증 메일이 발송되었습니다!');
     setLoading(false);
   };
 
   return (
-    <div className="max-w-md mx-auto p-8 bg-white rounded-2xl shadow-xl border border-slate-100">
-      <h2 className="text-2xl font-bold mb-6 text-center">반가워요!</h2>
-      <div className="space-y-4">
+    <div className="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md border border-gray-100">
+      <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">GostWriter 시작하기</h2>
+      
+      {/* 이메일 입력 섹션 */}
+      <div className="space-y-4 mb-6">
         <input
           type="email"
           placeholder="이메일 주소"
-          className="w-full p-3 border rounded-lg"
+          className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+          value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <input
           type="password"
           placeholder="비밀번호"
-          className="w-full p-3 border rounded-lg"
+          className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+          value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
         <div className="flex gap-2">
-          <button
-            onClick={handleLogin}
+          <button 
+            onClick={() => handleEmailAuth('LOGIN')}
             disabled={loading}
-            className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:bg-slate-300"
+            className="flex-1 bg-indigo-600 text-white p-3 rounded-lg font-semibold hover:bg-indigo-700 transition"
           >
             로그인
           </button>
-          <button
-            onClick={handleSignUp}
+          <button 
+            onClick={() => handleEmailAuth('SIGNUP')}
             disabled={loading}
-            className="flex-1 py-3 bg-slate-100 text-slate-700 rounded-lg font-bold hover:bg-slate-200"
+            className="flex-1 border border-indigo-600 text-indigo-600 p-3 rounded-lg font-semibold hover:bg-indigo-50 transition"
           >
             회원가입
           </button>
         </div>
+      </div>
+
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center"><span className="w-full border-t"></span></div>
+        <div className="relative flex justify-center text-sm"><span className="px-2 bg-white text-gray-500">또는 소셜 계정으로 시작</span></div>
+      </div>
+
+      {/* 소셜 로그인 버튼 세트 */}
+      <div className="space-y-3">
+        {/* 구글 버튼 */}
+        <button 
+          onClick={() => handleSocialLogin('google')}
+          className="w-full flex items-center justify-center gap-3 p-3 border rounded-lg hover:bg-gray-50 transition shadow-sm"
+        >
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="Google" />
+          <span className="text-gray-700 font-medium">Google로 계속하기</span>
+        </button>
+
+        {/* 카카오 버튼 */}
+        <button 
+          onClick={() => handleSocialLogin('kakao')}
+          className="w-full flex items-center justify-center gap-3 p-3 bg-[#FEE500] rounded-lg hover:bg-[#FADA0A] transition"
+        >
+          <img src="https://k.kakaocdn.net/14/dn/btroDszwNrM/l6pW98q396SsuS60S9yO40/o.jpg" width="20" alt="Kakao" />
+          <span className="text-[#3C1E1E] font-medium">카카오로 계속하기</span>
+        </button>
       </div>
     </div>
   );

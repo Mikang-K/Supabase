@@ -13,9 +13,16 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json()
     const { 
-      character_ids, scenario_id, user_id, story_id, 
-      mode = 'generate', plot_notes = "", genre = "판타지",
-      custom_characters = "", custom_scenario = "" // 직접 입력 필드 추가
+      character_ids, 
+      manual_characters = [], // 직접 작성한 인물 리스트
+      user_id, 
+      story_id, 
+      mode = 'generate', 
+      user_title = "",
+      relationship_desc = "",
+      genre_desc = "판타지",
+      total_episodes = 20,
+      next_direction = ""
     } = body
     
     const supabaseClient = createClient(
@@ -23,103 +30,142 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const walletReq = supabaseClient.from('wallets').select('balance').eq("user_id", user_id).maybeSingle();
-    const charReq = (character_ids && character_ids.length > 0)
-    ? supabaseClient.from('characters').select('*').in("id", character_ids)
-    : Promise.resolve({ data: [] });
-    const scenReq = scenario_id
-    ? supabaseClient.from("scenarios").select('*').eq('id', scenario_id).maybeSingle()
-    : Promise.resolve({ data: null });
-    const [walletRes, charRes, scenRes] = await Promise.all([walletReq, charReq, scenReq]);
+    let storyInfo = null;
 
-    const wallet = walletRes.data;
-    const presetCharacters = charRes.data;
-    const presetScenario = scenRes.data;
+    // 1. 데이터 준비
+    const { data: wallet } = await supabaseClient.from('wallets').select('balance').eq("user_id", user_id).single();
+    if (!wallet || wallet.balance < 1) throw new Error("토큰이 부족합니다.");
 
-    if (!wallet || wallet.balance < 1) throw new Error("토큰이 부족합니다.")
-
-    const finalCharacters = custom_characters 
-      ? custom_characters 
-      : (presetCharacters?.map(c => `- ${c.name}: ${c.personality_tags?.join(', ')}, 말투: ${c.dialogue_style}`).join('\n') || "");
-    
-    const finalScenario = custom_scenario 
-      ? custom_scenario 
-      : (presetScenario?.setting_text || "");
-
-    if (!finalCharacters) throw new Error("등장인물 설정이 없습니다.");
-    if (!finalScenario) throw new Error("배경 시나리오 설정이 없습니다.");
-
-    let currentSummary = ""
-    if (story_id) {
-      const { data: story } = await supabaseClient.from('stories').select('summary').eq('id', story_id).maybeSingle()
-      currentSummary = story?.summary || ""
+    let presetCharacters = [];
+    if (character_ids?.length > 0) {
+      const { data } = await supabaseClient.from('characters').select('*').in("id", character_ids);
+      presetCharacters = data || [];
     }
 
-    const apiKey = Deno.env.get('GEMINI_API_KEY')
-    const prompt = `전문 웹소설 작가로서 다음 설정으로 장면을 웹소설 형식으로 작성합니다. 본문 내용은 최소 3000자 이상으로 작성하도록 합니다. 응답은 반드시 JSON 코드 블록 하나만 출력하고, 그 외에 어떠한 설명이나 분석도 덧붙이지 마세요.
-장르: ${genre}
+    // 2. 현재 화수 계산
+    let currentEpisode = 1;
+    if (story_id) {
+      const { data: existingStory, error: storyError } = await supabaseClient
+        .from('stories')
+        .select('*')
+        .eq('id', story_id)
+        .single();
+      
+      if (existingStory) {
+        storyInfo = existingStory; // 변수에 데이터 할당
+        // 현재 몇 화인지 계산
+        const { count } = await supabaseClient
+          .from('story_contents')
+          .select('*', { count: 'exact', head: true })
+          .eq('story_id', story_id);
+        currentEpisode = (count || 0) + 1;
+      }
+    }
+    const displayTitle = user_title || storyInfo?.title || "새로운 이야기";
+    const displayGenre = storyInfo?.genre_desc || genre_desc;
 
-[등장인물 설정]
-${finalCharacters}
+    let presetNames = "";
 
-[배경 및 상황 설정]
-${finalScenario}
+    if (character_ids?.length > 0) {
+      const { data: chars } = await supabaseClient.from('characters').select('name').in("id", character_ids);
+      presetNames = chars?.map(c => c.name).join(', ') || "";
+    }
+    const manualCharContext = manual_characters.length > 0 ? `, ${manual_characters.join(', ')}` : "";
 
-[고정 설정 및 복선]
-${plot_notes}
+    const isFinalEpisode = currentEpisode >= total_episodes;
 
-[현재까지 줄거리 요약]
-${currentSummary || "이야기의 시작점입니다."}
+    // 3. AI 프롬프트 구성
+    const charContext = [
+      ...presetCharacters.map(c => `${c.name}(프리셋)`),
+      ...manual_characters.map((c: string) => `${c}(사용자 정의)`)
+    ].join(', ');
 
-반드시 JSON으로만 응답:
-{ "title": "${mode === 'generate' ? '매력적인 제목' : 'N/A'}", "content": "풍부한 묘사와 대사가 포함된 본문", "summary": "지금까지의 내용을 포함한 전체 줄거리 요약" }`;
+    // 3. AI 요청 프롬프트
+    const systemInstruction = `
+[페르소나: 전문 고스트라이터]
+- 아이덴티티: 의뢰인(사용자)의 요구를 완벽하게 문장으로 구현하는 익명의 고스트라이터.
+- 태도: 정중하고 냉철하며, 오로지 의뢰인의 예술적 비전을 훼손하지 않고 극대화하는 데 집중함.
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+[작품 정보]
+- 제목: ${displayTitle || "자동 생성"}
+- 장르 및 분위기: ${displayGenre}
+- 등장인물: ${presetCharacters?.map(c => c.name).join(', ')}${manualCharContext}
+- 인물 관계: ${relationship_desc}
+- 현재 화수: ${currentEpisode}화 / 총 ${total_episodes}화
+
+[집필 규칙]
+- 문체: 문학적이고 서정적인 산문체. 인물의 내면 심리를 현미경처럼 들여다보는 집요한 묘사.
+- 금기: 이미 사용한 소재는 반복하지 않으며, 이전 설정을 유지하며 매번 새로운 에피소드를 구성합니다. 직접적인 성격 묘사(MBTI, 형용사 등) 금지. 인물의 습관, 시선의 높이, 주변 사물의 상태, 은유를 통해서만 인물의 상태를 암시할 것.
+- 이번 화 지시: ${next_direction || "이야기를 시작하세요."}
+- ${isFinalEpisode ? "완결 회차입니다. 서사를 마무리하세요." : "다음 화가 기대되도록 끝맺음하세요."}
+
+반드시 아래 JSON 형식으로만 응답하세요:
+{
+  "title": "소제목",
+  "content": "본문 내용",
+  "summary": "전체 줄거리 요약",
+  "next_options": ["다음 전개 제안 1", "다음 전개 제안 2", "다음 전개 제안 3"],
+  "is_finished": ${isFinalEpisode}
+}`;
+
+    // 4. Gemini API 호출 및 상세 에러 핸들링
+    const LLM_MODEL = "gemini-2.5-flash"
+    const apiKey = Deno.env.get('GEMINI_API_KEY');
+    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${LLM_MODEL}:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    })
+      body: JSON.stringify({ contents: [{ parts: [{ text: systemInstruction }] }] })
+    });
 
-    const result = await response.json()
-    if (result.error) {
-      console.error("Google API Error:", result.error);
-      throw new Error(`AI API 오류: ${result.error.message}`);
+    if (!geminiRes.ok) {
+      const errorData = await geminiRes.text();
+      throw new Error(`Gemini API 오류: ${geminiRes.status} - ${errorData}`);
     }
-    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text
-    if (!rawText) throw new Error("AI 응답 생성 실패")
 
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) throw new Error("유효한 JSON 응답을 찾을 수 없습니다.")
-    console.log("Raw AI Response:", rawText);
-    const parsed = JSON.parse(jsonMatch[0])
+    const result = await geminiRes.json();
 
-    await supabaseClient.from('wallets').update({ balance: wallet.balance - 1 }).eq('user_id', user_id)
+    console.log("AI Raw Result:", JSON.stringify(result, null, 2)); // 디버그용 전체 응답 로그
 
-    let finalStoryId = story_id
-    if (mode === 'regenerate' && story_id) {
-      const { data: last } = await supabaseClient.from('story_contents').select('id').eq('story_id', story_id).order('order_index', { ascending: false }).limit(1).single()
-      if (last) await supabaseClient.from('story_contents').update({ content: parsed.content }).eq('id', last.id)
-      await supabaseClient.from('stories').update({ summary: parsed.summary, plot_notes }).eq('id', story_id)
-    } else if (mode === 'continue' && story_id) {
-      await supabaseClient.from('stories').update({ summary: parsed.summary, plot_notes }).eq('id', story_id)
-      const { data: last } = await supabaseClient.from('story_contents').select('order_index').eq('story_id', story_id).order('order_index', { ascending: false }).limit(1).single()
-      await supabaseClient.from('story_contents').insert({ story_id, content: parsed.content, order_index: (last?.order_index || 0) + 1 })
+    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("AI 응답 형식 오류");
+    const parsed = JSON.parse(jsonMatch[0]);
+    const finalTitle = user_title || storyInfo?.title || parsed.title || "무제";
+    console.log("Parsed JSON Object:", parsed); // 디버그용 파싱된 JSON 데이터 로그
+
+    // 4. DB 저장 로직 (next_options 포함)
+    await supabaseClient.from('wallets').update({ balance: wallet.balance - 1 }).eq('user_id', user_id);
+
+    let finalStoryId = story_id;
+    if (mode === 'continue' && story_id) {
+      await supabaseClient.from('story_contents').insert({ 
+        story_id, content: parsed.content, order_index: currentEpisode 
+      });
+      // 최신 추천 전개를 stories 테이블에 업데이트
+      await supabaseClient.from('stories').update({ 
+        summary: parsed.summary, 
+        next_options: parsed.next_options 
+      }).eq('id', story_id);
     } else {
-      const { data: newStory, error: insertError } = await supabaseClient.from('stories').insert({ 
-        user_id, title: parsed.title, summary: parsed.summary, plot_notes 
-      }).select().maybeSingle()
-      if (insertError) throw new Error(`저장 실패: ${insertError.message}`)
-      finalStoryId = newStory.id
-      await supabaseClient.from('story_contents').insert({ story_id: finalStoryId, content: parsed.content, order_index: 1 })
+      const { data: newStory } = await supabaseClient.from('stories').insert({ 
+        user_id, 
+        title: user_title || parsed.title, 
+        summary: parsed.summary,
+        total_episodes,
+        next_options: parsed.next_options, // 초기 추천 저장
+        genre_desc // 상세 페이지에서 이어쓰기 시 참조 위해 저장
+      }).select().single();
+      finalStoryId = newStory.id;
+      await supabaseClient.from('story_contents').insert({ story_id: finalStoryId, content: parsed.content, order_index: 1 });
     }
 
     return new Response(JSON.stringify({ ...parsed, story_id: finalStoryId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    });
 
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    });
   }
-})
+});
