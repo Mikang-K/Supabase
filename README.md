@@ -2,7 +2,7 @@
 
 > **Gemini AI와 Supabase를 결합하여 사용자의 상상력을 실시간 소설로 구현하는 인터랙티브 플랫폼입니다.**
 
-[🚀 배포 사이트 바로가기](본인의_Vercel_주소)
+[🚀 배포 사이트 바로가기]([https://supabase1-orcin.vercel.app/])
 
 ---
 
