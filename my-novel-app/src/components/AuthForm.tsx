@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import Image from 'next/image';
 
 export default function AuthForm() {
   const [email, setEmail] = useState('');
@@ -87,12 +88,18 @@ export default function AuthForm() {
 
         {/* 카카오 버튼 */}
         <button 
-          onClick={() => handleSocialLogin('kakao')}
-          className="w-full flex items-center justify-center gap-3 p-3 bg-[#FEE500] rounded-lg hover:bg-[#FADA0A] transition"
-        >
-          <img src="https://k.kakaocdn.net/14/dn/btroDszwNrM/l6pW98q396SsuS60S9yO40/o.jpg" width="20" alt="Kakao" />
-          <span className="text-[#3C1E1E] font-medium">카카오로 계속하기</span>
-        </button>
+            onClick={() => handleSocialLogin('kakao')}
+            /* 버튼 자체의 배경색과 패딩을 제거하고, 크기만 설정합니다. */
+            className="w-full relative h-[45px] md:h-[55px] transition-transform active:scale-[0.98] hover:opacity-95"
+          >
+            <Image 
+              src="/images/kakao_login.png" // 실제 이미지 경로로 수정하세요
+              alt="카카오로 계속하기"
+              fill // 부모 버튼의 크기에 꽉 채웁니다.
+              priority // 로그인 화면이므로 빠르게 로딩되도록 설정
+              className="object-contain" // 이미지 비율을 유지하면서 버튼 안에 배치
+            />
+          </button>
       </div>
     </div>
   );
