@@ -143,7 +143,7 @@ export default function Navbar() {
                 className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all group ${
                   isActive 
                     ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    : 'text-slate-500 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
                 <item.icon 
