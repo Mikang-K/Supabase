@@ -15,10 +15,10 @@ export default async function WritePage() {
   ]);
 
   return (
-    <main className="p-10 md:p-18 max-w-6xl mx-auto">
-      <div className="mb-10">
-        <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100">새 소설 집필실</h2>
-        <p className="text-slate-500 mt-2">등장인물과 배경을 설정하고 AI와 함께 이야기를 만들어보세요.</p>
+    <main className="pt-20 pb-10 px-4 md:px-10 max-w-6xl mx-auto">
+      <div className="mb-6 md:mb-10">
+        <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-slate-100">새 소설 집필실</h2>
+        <p className="text-sm md:text-base text-slate-500 mt-2">등장인물과 배경을 설정하고 AI와 함께 이야기를 만들어보세요.</p>
       </div>
       <NovelGenerator 
         characters={charRes.data || []} 

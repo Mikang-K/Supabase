@@ -113,15 +113,15 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-3 md:px-2 z-50 transition-colors">
+      <nav className="fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 md:px-6 z-50 transition-colors">
         {/* 로고 섹션 */}
         <div 
-          className="flex items-center gap-3 cursor-pointer" 
+          className="hidden sm:flex items-center gap-3 cursor-pointer dark:invert" 
           onClick={() => router.push('/')}
         >
         {/* 기존 h1을 Image 컴포넌트로 대체 */}
           <Image 
-            src="/images/IMG_9974.png" // public/images/logo.png에 파일이 있는 경우
+            src="/images/Gostwriter.png" // public/images/logo.png에 파일이 있는 경우
             alt="GhostWriter"
             width={180}  // 로고의 너비 (비율에 맞춰 조정)
             height={40}  // 로고의 높이 (비율에 맞춰 조정)
@@ -131,7 +131,7 @@ export default function Navbar() {
         </div>
         
         {/* 메뉴 링크 섹션 */}
-        <div className="hidden md:flex items-center gap-1 ml-4">
+        <div className="flex items-center gap-0 md:gap-1 ml-0 md:ml-4">
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
             if (item.authRequired && !user) return null;
@@ -147,7 +147,7 @@ export default function Navbar() {
                 }`}
               >
                 <item.icon 
-                  size={24} 
+                  size={20} 
                   className={isActive ? 'text-blue-600 dark:text-blue-400' : 'group-hover:text-slate-700 dark:group-hover:text-slate-200'} 
                 />
                 <span className="font-bold hidden md:block">{item.name}</span>
@@ -157,17 +157,14 @@ export default function Navbar() {
         </div>
 
         {/* 하단 제어 섹션 (테마, 지갑, 로그아웃) */}
-        <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex items-center gap-1 md:gap-4">
           {/* 다크모드 토글 */}
           {mounted && (
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="flex items-center gap-4 px-3 py-3 w-80 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"
+              className="flex items-center justify-center gap-4 px-2 py-3 w-auto text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"
             >
-              {theme === 'dark' ? <Sun size={24} /> : <Moon size={24} />}
-              <span className="text-[16px] font-bold hidden md:block">
-                {theme === 'dark' ? '라이트 모드' : '다크 모드'}
-              </span>
+              {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
             </button>
           )}
 
@@ -175,9 +172,9 @@ export default function Navbar() {
             <>
               {/* 토큰 표시 */}
               <div className="flex items-center gap-2 md:gap-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Coins size={14} className="text-blue-600 dark:text-blue-400" />
-                  <span className="text-[10px] font-black text-blue-400 uppercase">Tokens</span>
+                <div className="flex items-center gap-1">
+                  <Coins size={20} className="text-blue-600 dark:text-blue-400" />
+                  <span className="hidden sm:flex text-[12px] font-black text-blue-400 uppercase">Tokens</span>
                 </div>
                 <div className="text-xl font-black text-blue-600 dark:text-blue-400">
                   {balance !== null ? balance.toLocaleString() : '...'}

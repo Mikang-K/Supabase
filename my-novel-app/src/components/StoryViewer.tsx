@@ -44,14 +44,14 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="dark:bg-slate-900 relative bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 min-h-[700px] flex flex-col overflow-hidden">
-        <header className="dark:bg-slate-900 p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
-          <h1 className="dark:text-white text-2xl font-black text-slate-800 truncate pr-4">{initialStory.title}</h1>
-          <span className="text-sm font-bold text-slate-400 whitespace-nowrap">PAGE {currentPage + 1} / {contents.length}</span>
+    <div className="pt-11 md:pt-5 max-w-4xl mx-auto px-2 md:px-0">
+      <div className="dark:bg-slate-900 relative bg-white rounded-[1.5rem] md:rounded-[2.5rem] shadow-2xl border border-slate-100 min-h-[500px] md:min-h-[700px] flex flex-col overflow-hidden">
+        <header className="dark:bg-slate-900 p-4 md:p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+          <h1 className="dark:text-white text-lg md:text-2xl font-black text-slate-800 truncate pr-4">{initialStory.title}</h1>
+          <span className="text-[10px] md:text-sm font-bold text-slate-400 whitespace-nowrap uppercase">PAGE {currentPage + 1} / {contents.length}</span>
         </header>
 
-        <main className="dark:bg-slate-900 flex-1 relative p-10 md:p-16 overflow-hidden">
+        <main className="dark:bg-slate-900 flex-1 relative p-6 md:p-16 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentPage}
@@ -59,19 +59,19 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -50, opacity: 0 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
-              className="dark:text-white text-m text-slate-700 leading-[1.8] font-serif whitespace-pre-wrap"
+              className="dark:text-white text-base md:text-lg text-slate-700 leading-[1.6] md:leading-[1.8] font-serif whitespace-pre-wrap"
             >
               {contents[currentPage]?.content}
             </motion.div>
           </AnimatePresence>
         </main>
 
-        <footer className="dark:bg-slate-900 p-8 bg-slate-50/50 flex items-center justify-between border-t border-slate-100">
-          <div className="flex gap-4">
-            <button onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))} disabled={currentPage === 0} className="p-4 bg-white rounded-2xl border shadow-sm disabled:opacity-20 transition hover:bg-slate-100"><ChevronLeft/></button>
-            <button onClick={() => setCurrentPage(prev => Math.min(contents.length - 1, prev + 1))} disabled={currentPage === contents.length - 1} className="p-4 bg-white rounded-2xl border shadow-sm disabled:opacity-20 transition hover:bg-slate-100"><ChevronRight/></button>
+        <footer className="dark:bg-slate-900 p-4 md:p-8 bg-slate-50/50 flex items-center justify-between border-t border-slate-100">
+          <div className="flex gap-2 md:gap-4">
+            <button onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))} disabled={currentPage === 0} className="p-3 md:p-4 bg-white rounded-xl border shadow-sm disabled:opacity-20 transition hover:bg-slate-100"><ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-slate-600 dark:text-slate-300"/></button>
+            <button onClick={() => setCurrentPage(prev => Math.min(contents.length - 1, prev + 1))} disabled={currentPage === contents.length - 1} className="p-3 md:p-4 bg-white rounded-xl border shadow-sm disabled:opacity-20 transition hover:bg-slate-100"><ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-slate-600 dark:text-slate-300"/></button>
           </div>
-          <div className="text-slate-300 font-black text-xs uppercase tracking-widest hidden sm:block">Ghostwriter Service</div>
+          <div className="text-slate-300 font-black text-[10px] uppercase tracking-widest hidden sm:block">Ghostwriter Service</div>
         </footer>
       </div>
 
@@ -82,41 +82,27 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
             
             {currentOptions.length > 0 && (
               <div className="mb-6">
-                <button 
-                  onClick={() => setShowOptions(!showOptions)}
-                  className="flex items-center gap-2 text-slate-400 font-bold text-[11px] uppercase tracking-tighter hover:text-blue-400 transition-colors mb-3"
-                >
-                  <Lightbulb size={14} className={showOptions ? "text-yellow-400" : "text-slate-500"}/> 
-                  AI 추천 전개 확인하기 
-                  {showOptions ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
-                </button>
-
-                <AnimatePresence>
-                  {showOptions && (
-                    <motion.div 
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeOut" }}
-                      className="overflow-hidden"
+                <div className="flex items-center gap-2 text-amber-400 mb-3">
+                  <Lightbulb className="w-4 h-4" />
+                  <span className="text-xs md:text-sm font-bold uppercase tracking-tight">AI 추천 전개</span>
+                </div>
+                
+                {/* 추천 옵션 리스트: 스크롤 영역 확보 및 간격 조절 */}
+                <div className="grid gap-2">
+                  {currentOptions.map((opt, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setNextDirection(opt)}
+                      className={`text-left p-4 rounded-xl border transition-all text-sm md:text-base leading-relaxed
+                        ${nextDirection === opt 
+                          ? 'bg-blue-600/20 border-blue-500 text-blue-200' 
+                          : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-800 hover:border-slate-600'
+                        }`}
                     >
-                      <div className="flex flex-wrap gap-2 pt-1 pb-4">
-                        {currentOptions.map((opt, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => {
-                              setNextDirection(opt);
-                              setShowOptions(false); // 선택 후 닫기 (선택 사항)
-                            }}
-                            className="text-base sm:text-lg md:text-xl text-slate-700 leading-relaxed sm:leading-[2.2] md:leading-[2.4] font-serif whitespace-pre-wrap"
-                          >
-                            {opt}
-                          </button>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -131,7 +117,7 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
               disabled={loading}
               className="w-full py-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-3xl transition shadow-xl flex items-center justify-center gap-3"
             >
-              {loading ? "집필 중..." : <><Sparkles size={20}/> 다음 페이지 연재하기</>}
+              {loading ? "집필 중..." : <><Sparkles size={20}/> 다음 화 연재하기</>}
             </button>
           </div>
         </div>
