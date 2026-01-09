@@ -156,8 +156,7 @@ Deno.serve(async (req) => {
     console.log("Parsed JSON Object:", parsed); // 디버그용 파싱된 JSON 데이터 로그
 
     // 4. DB 저장 로직 (next_options 포함)
-    await supabaseClient.from('wallets').update({ balance: wallet.balance - 1 }).eq('user_id', user_id);
-
+    
     let finalStoryId = story_id;
     if (mode === 'continue' && story_id) {
       await supabaseClient.from('story_contents').insert({ 
@@ -177,26 +176,29 @@ Deno.serve(async (req) => {
         next_options: parsed.next_options, // 초기 추천 저장
         genre_desc // 상세 페이지에서 이어쓰기 시 참조 위해 저장
       }).select().single();
-
+      
       if (!newStory) throw new Error("스토리 생성 후 데이터를 불러올 수 없습니다.");
-
+      
       finalStoryId = newStory.id;
       await supabaseClient
       .from('story_contents')
       .insert({ story_id: finalStoryId,
-         content: parsed.content, 
-         order_index: 1 });
+        content: parsed.content, 
+        order_index: 1 });
+      }
+      
+      return new Response(JSON.stringify({ ...parsed, story_id: finalStoryId }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+      
+    }
+    catch (error: any) {
+      console.error("Database Transaction Error:", error.message);
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    return new Response(JSON.stringify({ ...parsed, story_id: finalStoryId }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-
-  }
-   catch (error: any) {
-    console.error("Database Transaction Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-  }
+    await supabaseClient.from('wallets').update({ balance: wallet.balance - 1 }).eq('user_id', user_id);
+    console.log("Token Changed: ", wallets.balance); // 디버그용 파싱된 JSON 데이터 로그
 });

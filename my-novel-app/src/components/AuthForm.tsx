@@ -93,7 +93,7 @@ export default function AuthForm() {
             className="w-full relative h-[45px] md:h-[55px] transition-transform active:scale-[0.98] hover:opacity-95"
           >
             <Image 
-              src="/images/kakao_login.png" // 실제 이미지 경로로 수정하세요
+              src="/images/kakao_login_medium_narrow.png.png" // 실제 이미지 경로로 수정하세요
               alt="카카오로 계속하기"
               fill // 부모 버튼의 크기에 꽉 채웁니다.
               priority // 로그인 화면이므로 빠르게 로딩되도록 설정
