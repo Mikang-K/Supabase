@@ -16,7 +16,7 @@ export default async function StoryDetailPage({ params }: { params: Promise<{ id
   if (!storyRes.data) notFound();
 
   return (
-    <main className="min-h-screen bg-slate-50 p-6 md:p-12">
+    <main className="min-h-screen bg-slate-50 p-6 md:p-12 dark:bg-slate-900">
       <StoryViewer 
         initialStory={storyRes.data} 
         initialContents={contentRes.data || []} 

@@ -45,13 +45,13 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="relative bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 min-h-[700px] flex flex-col overflow-hidden">
-        <header className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
-          <h1 className="text-2xl font-black text-slate-800 truncate pr-4">{initialStory.title}</h1>
+      <div className="dark:bg-slate-900 relative bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 min-h-[700px] flex flex-col overflow-hidden">
+        <header className="dark:bg-slate-900 p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+          <h1 className="dark:text-white text-2xl font-black text-slate-800 truncate pr-4">{initialStory.title}</h1>
           <span className="text-sm font-bold text-slate-400 whitespace-nowrap">PAGE {currentPage + 1} / {contents.length}</span>
         </header>
 
-        <main className="flex-1 relative p-10 md:p-16 overflow-hidden">
+        <main className="dark:bg-slate-900 flex-1 relative p-10 md:p-16 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentPage}
@@ -59,14 +59,14 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -50, opacity: 0 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
-              className="text-xl text-slate-700 leading-[2.4] font-serif whitespace-pre-wrap"
+              className="dark:text-white text-m text-slate-700 leading-[1.8] font-serif whitespace-pre-wrap"
             >
               {contents[currentPage]?.content}
             </motion.div>
           </AnimatePresence>
         </main>
 
-        <footer className="p-8 bg-slate-50/50 flex items-center justify-between border-t border-slate-100">
+        <footer className="dark:bg-slate-900 p-8 bg-slate-50/50 flex items-center justify-between border-t border-slate-100">
           <div className="flex gap-4">
             <button onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))} disabled={currentPage === 0} className="p-4 bg-white rounded-2xl border shadow-sm disabled:opacity-20 transition hover:bg-slate-100"><ChevronLeft/></button>
             <button onClick={() => setCurrentPage(prev => Math.min(contents.length - 1, prev + 1))} disabled={currentPage === contents.length - 1} className="p-4 bg-white rounded-2xl border shadow-sm disabled:opacity-20 transition hover:bg-slate-100"><ChevronRight/></button>
@@ -76,7 +76,7 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
       </div>
 
       {!initialStory.is_finished && currentPage === contents.length - 1 && (
-        <div className="mt-12 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="mt-8 md:mt-12 space-y-6 pb-10">
           <div className="bg-slate-900 p-8 rounded-[2rem] shadow-xl text-white">
             <label className="flex items-center gap-2 text-blue-400 font-bold text-sm mb-4 uppercase tracking-wider"><MessageSquare size={16}/> 다음 화 연재 지침</label>
             
@@ -97,6 +97,7 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
                       className="overflow-hidden"
                     >
                       <div className="flex flex-wrap gap-2 pt-1 pb-4">
@@ -107,7 +108,7 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
                               setNextDirection(opt);
                               setShowOptions(false); // 선택 후 닫기 (선택 사항)
                             }}
-                            className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-300 hover:border-blue-500 hover:text-blue-400 transition animate-in fade-in zoom-in-95"
+                            className="text-base sm:text-lg md:text-xl text-slate-700 leading-relaxed sm:leading-[2.2] md:leading-[2.4] font-serif whitespace-pre-wrap"
                           >
                             {opt}
                           </button>

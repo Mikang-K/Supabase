@@ -7,6 +7,21 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+function cleanJSON(text: string) {
+  try {
+    let cleaned = text.trim();
+    // Markdown 코드 블록 제거
+    if (cleaned.startsWith("```json")) {
+      cleaned = cleaned.replace(/^```json/, "").replace(/```$/, "");
+    } else if (cleaned.startsWith("```")) {
+      cleaned = cleaned.replace(/^```/, "").replace(/```$/, "");
+    }
+    return cleaned.trim();
+  } catch (e) {
+    return text;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -99,10 +114,12 @@ Deno.serve(async (req) => {
 - 이번 화 지시: ${next_direction || "이야기를 시작하세요."}
 - ${isFinalEpisode ? "완결 회차입니다. 서사를 마무리하세요." : "다음 화가 기대되도록 끝맺음하세요."}
 
-반드시 아래 JSON 형식으로만 응답하세요:
+[출력 규칙]
+반드시 아래 JSON 형식으로만 응답하며, JSON형식 이외의 추가 문구를 절대로 작성하지 않도록 합니다.
+-출력 예시:
 {
   "title": "소제목",
-  "content": "본문 내용",
+  "content": "3000자 내외의 본문 내용",
   "summary": "전체 줄거리 요약",
   "next_options": ["다음 전개 제안 1", "다음 전개 제안 2", "다음 전개 제안 3"],
   "is_finished": ${isFinalEpisode}
@@ -123,13 +140,18 @@ Deno.serve(async (req) => {
     }
 
     const result = await geminiRes.json();
-
+    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
     console.log("AI Raw Result:", JSON.stringify(result, null, 2)); // 디버그용 전체 응답 로그
 
-    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("AI 응답 형식 오류");
-    const parsed = JSON.parse(jsonMatch[0]);
+    let parsed;
+    try {
+      const cleaned = cleanJSON(rawText);
+      parsed = JSON.parse(cleaned);
+    } catch (e) {
+      console.error("JSON Parse Failed. Cleaned Text:", cleanJSON(rawText));
+      throw new Error("AI 응답 형식이 올바르지 않습니다. 다시 시도해 주세요.");
+    }
+    
     const finalTitle = user_title || storyInfo?.title || parsed.title || "무제";
     console.log("Parsed JSON Object:", parsed); // 디버그용 파싱된 JSON 데이터 로그
 
@@ -155,15 +177,24 @@ Deno.serve(async (req) => {
         next_options: parsed.next_options, // 초기 추천 저장
         genre_desc // 상세 페이지에서 이어쓰기 시 참조 위해 저장
       }).select().single();
+
+      if (!newStory) throw new Error("스토리 생성 후 데이터를 불러올 수 없습니다.");
+
       finalStoryId = newStory.id;
-      await supabaseClient.from('story_contents').insert({ story_id: finalStoryId, content: parsed.content, order_index: 1 });
+      await supabaseClient
+      .from('story_contents')
+      .insert({ story_id: finalStoryId,
+         content: parsed.content, 
+         order_index: 1 });
     }
 
     return new Response(JSON.stringify({ ...parsed, story_id: finalStoryId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  }
+   catch (error: any) {
+    console.error("Database Transaction Error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

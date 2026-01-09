@@ -7,6 +7,7 @@ import { User } from '@supabase/supabase-js';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Sun,
   Moon, 
@@ -112,19 +113,25 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="fixed left-0 top-0 h-screen w-20 md:w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col py-8 z-50 transition-colors">
+      <nav className="fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-3 md:px-2 z-50 transition-colors">
         {/* 로고 섹션 */}
         <div 
-          className="px-6 mb-10 hidden md:block cursor-pointer" 
+          className="flex items-center gap-3 cursor-pointer" 
           onClick={() => router.push('/')}
         >
-          <h1 className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tighter">
-            MY NOVEL
-          </h1>
+        {/* 기존 h1을 Image 컴포넌트로 대체 */}
+          <Image 
+            src="/images/IMG_9974.png" // public/images/logo.png에 파일이 있는 경우
+            alt="GhostWriter"
+            width={180}  // 로고의 너비 (비율에 맞춰 조정)
+            height={40}  // 로고의 높이 (비율에 맞춰 조정)
+            priority     // 상단 네비바에 있으므로 우선 로딩 설정
+            className="object-contain" // 이미지 비율 유지
+          />
         </div>
         
         {/* 메뉴 링크 섹션 */}
-        <div className="flex-1 space-y-2 px-3">
+        <div className="hidden md:flex items-center gap-1 ml-4">
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
             if (item.authRequired && !user) return null;
@@ -150,15 +157,15 @@ export default function Navbar() {
         </div>
 
         {/* 하단 제어 섹션 (테마, 지갑, 로그아웃) */}
-        <div className="px-3 border-t dark:border-slate-800 pt-6 space-y-4">
+        <div className="flex items-center gap-2 md:gap-4">
           {/* 다크모드 토글 */}
           {mounted && (
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="flex items-center gap-4 px-4 py-3 w-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"
+              className="flex items-center gap-4 px-3 py-3 w-80 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"
             >
               {theme === 'dark' ? <Sun size={24} /> : <Moon size={24} />}
-              <span className="font-bold hidden md:block">
+              <span className="text-[16px] font-bold hidden md:block">
                 {theme === 'dark' ? '라이트 모드' : '다크 모드'}
               </span>
             </button>
@@ -167,10 +174,10 @@ export default function Navbar() {
           {user ? (
             <>
               {/* 토큰 표시 */}
-              <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl hidden md:block">
+              <div className="flex items-center gap-2 md:gap-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Coins size={14} className="text-blue-600 dark:text-blue-400" />
-                  <span className="text-[10px] font-black text-blue-400 uppercase">My Tokens</span>
+                  <span className="text-[10px] font-black text-blue-400 uppercase">Tokens</span>
                 </div>
                 <div className="text-xl font-black text-blue-600 dark:text-blue-400">
                   {balance !== null ? balance.toLocaleString() : '...'}

@@ -10,7 +10,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-white dark:bg-slate-950 transition-colors duration-300">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Navbar />
-          <div className="pl-20 md:pl-64 min-h-screen">
+          <div className="pl-20 md:pl-64 min-h-screen bg-slate-150">
             {children}
           </div>
         </ThemeProvider>
