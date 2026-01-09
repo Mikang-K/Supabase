@@ -121,7 +121,7 @@ export default function Navbar() {
         >
         {/* 기존 h1을 Image 컴포넌트로 대체 */}
           <Image 
-            src="/images/Gostwriter.png" // public/images/logo.png에 파일이 있는 경우
+            src="/images/Gostwriter.png" 
             alt="GhostWriter"
             width={180}  // 로고의 너비 (비율에 맞춰 조정)
             height={40}  // 로고의 높이 (비율에 맞춰 조정)

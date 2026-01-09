@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
 -출력 예시:
 {
   "title": "소제목",
-  "content": "3000자 내외의 본문 내용",
+  "content": "2000자 내외의 본문 내용",
   "summary": "전체 줄거리 요약",
   "next_options": ["다음 전개 제안 1", "다음 전개 제안 2", "다음 전개 제안 3"],
   "is_finished": ${isFinalEpisode}

@@ -79,25 +79,31 @@ export default function AuthForm() {
       <div className="space-y-3">
         {/* 구글 버튼 */}
         <button 
-          onClick={() => handleSocialLogin('google')}
-          className="w-full flex items-center justify-center gap-3 p-3 border rounded-lg hover:bg-gray-50 transition shadow-sm"
-        >
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="Google" />
-          <span className="text-gray-700 font-medium">Google로 계속하기</span>
-        </button>
+            onClick={() => handleSocialLogin('google')}
+            /* 버튼 자체의 배경색과 패딩을 제거하고, 크기만 설정합니다. */
+            className="w-full relative h-[45px] md:h-[55px] transition-transform active:scale-[0.98] hover:opacity-95"
+          >
+            <Image 
+              src="/images/web_light_sq_ctn@1x.png" // 실제 이미지 경로로 수정하세요
+              alt="카카오로 계속하기"
+              fill // 부모 버튼의 크기에 꽉 채웁니다.
+              priority // 로그인 화면이므로 빠르게 로딩되도록 설정
+              className="object-contain scale-[0.90]" // 이미지 비율을 유지하면서 버튼 안에 배치
+            />
+          </button>
 
         {/* 카카오 버튼 */}
         <button 
             onClick={() => handleSocialLogin('kakao')}
             /* 버튼 자체의 배경색과 패딩을 제거하고, 크기만 설정합니다. */
-            className="w-full relative h-[45px] md:h-[55px] transition-transform active:scale-[0.98] hover:opacity-95"
+            className="w-full relative h-[40px] md:h-[55px] transition-transform active:scale-[0.98] hover:opacity-95"
           >
             <Image 
-              src="/images/kakao_login_medium_narrow.png.png" // 실제 이미지 경로로 수정하세요
+              src="/images/kakao_login_medium_narrow.png" // 실제 이미지 경로로 수정하세요
               alt="카카오로 계속하기"
               fill // 부모 버튼의 크기에 꽉 채웁니다.
               priority // 로그인 화면이므로 빠르게 로딩되도록 설정
-              className="object-contain" // 이미지 비율을 유지하면서 버튼 안에 배치
+              className="object-contain scale-[1.05]" // 이미지 비율을 유지하면서 버튼 안에 배치
             />
           </button>
       </div>
