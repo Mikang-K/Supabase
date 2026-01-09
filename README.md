@@ -1,4 +1,4 @@
-# ✍️ AI Ghostwriter: 지능형 웹 소설 공동 집필 플랫폼
+# ✍️ Gostwriter: 지능형 웹 소설 공동 집필 플랫폼
 
 > **Gemini AI와 Supabase를 결합하여 사용자의 상상력을 실시간 소설로 구현하는 인터랙티브 플랫폼입니다.**
 
