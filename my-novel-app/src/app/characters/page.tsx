@@ -65,7 +65,7 @@ export default function CharacterManagement() {
   return (
     <main className="p-8 md:p-16 max-w-6xl mx-auto">
       <div className="mb-12">
-        <h2 className="text-4xl font-black text-slate-900">캐릭터 도감</h2>
+        <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100">캐릭터 도감</h2>
         <p className="text-slate-500 mt-2 text-lg">소설에 등장할 나만의 캐릭터들을 관리하세요.</p>
       </div>
 

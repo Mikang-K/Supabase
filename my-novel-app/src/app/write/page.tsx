@@ -15,7 +15,7 @@ export default async function WritePage() {
   ]);
 
   return (
-    <main className="p-6 md:p-12 max-w-5xl mx-auto">
+    <main className="p-10 md:p-18 max-w-6xl mx-auto">
       <div className="mb-10">
         <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100">새 소설 집필실</h2>
         <p className="text-slate-500 mt-2">등장인물과 배경을 설정하고 AI와 함께 이야기를 만들어보세요.</p>

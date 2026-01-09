@@ -5,8 +5,8 @@ import { PenLine, ArrowRight } from 'lucide-react';
 export default function Home() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-8 bg-gradient-to-b from-white to-blue-50">
-      <div className="max-w-3xl text-center space-y-8">
-        <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-bold animate-bounce">
+      <div className="max-w-3xl text-center space-y-8 dark:bg-slate-900">
+        <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-bold animate-bounce dark:bg-slate-900">
           AI와 함께 작가의 꿈을 이루세요 ✨
         </div>
         <h1 className="text-6xl font-black text-slate-900 leading-tight">
