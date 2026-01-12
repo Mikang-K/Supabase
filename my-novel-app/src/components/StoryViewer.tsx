@@ -43,6 +43,35 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
     }
   };
 
+  const handleContinueRLM = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('rlm-novel-writer', {
+        body: { 
+          user_id: userId,
+          story_id: initialStory.id,
+          mode: 'continue',
+          next_direction: nextDirection,
+          genre_desc: initialStory.genre_desc,
+        },
+      });
+
+      if (error) throw error;
+      
+      setContents([...contents, data]);
+      setCurrentOptions(data.next_options || []);
+      setCurrentPage(contents.length);
+      setNextDirection('');
+      setShowOptions(false);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   return (
     <div className="pt-11 md:pt-5 max-w-4xl mx-auto px-2 md:px-0">
       <div className="dark:bg-slate-900 relative bg-white rounded-[1.5rem] md:rounded-[2.5rem] shadow-2xl border border-slate-100 min-h-[500px] md:min-h-[700px] flex flex-col overflow-hidden">
@@ -75,7 +104,7 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
         </footer>
       </div>
 
-      {!initialStory.is_finished && currentPage === contents.length - 1 && (
+      {userId === initialStory?.user_id && !initialStory.is_finished && currentPage === contents.length - 1 && (
         <div className="mt-8 md:mt-12 space-y-6 pb-10">
           <div className="bg-slate-900 p-8 rounded-[2rem] shadow-xl text-white">
             <label className="flex items-center gap-2 text-blue-400 font-bold text-sm mb-4 uppercase tracking-wider"><MessageSquare size={16}/> 다음 화 연재 지침</label>
@@ -115,9 +144,16 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
             <button 
               onClick={handleContinue} 
               disabled={loading}
-              className="w-full py-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-3xl transition shadow-xl flex items-center justify-center gap-3"
+              className="w-full my-3 py-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-3xl transition shadow-xl flex items-center justify-center gap-3"
             >
               {loading ? "집필 중..." : <><Sparkles size={20}/> 다음 화 연재하기</>}
+            </button>
+            <button 
+              onClick={handleContinueRLM} 
+              disabled={loading}
+              className="w-full py-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-3xl transition shadow-xl flex items-center justify-center gap-3"
+            >
+              {loading ? "집필 중..." : <><Sparkles size={20}/> 다음 화 연재하기(RLM 테스트)</>}
             </button>
           </div>
         </div>

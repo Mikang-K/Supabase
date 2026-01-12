@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { createClient } from '@/utils/supabase/client';
 import { ChevronLeft, ChevronRight, Sparkles, Clock, BookOpen, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -14,22 +15,27 @@ const DUMMY_EVENTS = [
   { id: 3, title: "시스템 업데이트", desc: "AI 모델 업그레이드로 더 자연스러운 문장 생성 가능", color: "bg-slate-800", expires: "2025-01-10" }
 ];
 
-const DUMMY_STORIES = [
-  { id: '1', title: "새벽의 고스트라이터", author: "작가A", genre: "판타지", views: 1240, is_public: true },
-  { id: '2', title: "테크노피아의 종말", author: "작가B", genre: "SF", views: 850, is_public: true },
-  { id: '3', title: "달빛 아래 연가", author: "작가C", genre: "로맨스", views: 2100, is_public: true },
-  { id: '4', title: "잊혀진 왕국의 비밀", author: "작가D", genre: "어드벤처", views: 430, is_public: true },
-];
-
 export default function Home() {
   const [currentBanner, setCurrentBanner] = useState(0);
+  const [publicStories, setPublicStories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
   // 1. 배너 자동 슬라이드 로직 (5초 간격)
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentBanner((prev) => (prev + 1) % DUMMY_EVENTS.length);
-    }, 5000);
-    return () => clearInterval(timer);
+    const fetchPublicStories = async () => {
+      const { data, error } = await supabase
+        .from('stories')
+        .select('*')
+        .eq('is_public', true)
+        .order('created_at', { ascending: false })
+        .limit(6); // 최신 6개만 표시
+
+      if (data) setPublicStories(data);
+      setLoading(false);
+    };
+
+    fetchPublicStories();
   }, []);
 
   return (
@@ -73,67 +79,49 @@ export default function Home() {
       </section>
 
       {/* --- 섹션 2: 최근 게시된 소설 --- */}
-      <section className="px-4 md:px-10 max-w-7xl mx-auto mb-16">
-        <div className="flex items-center justify-between mb-8">
-          <h3 className="flex items-center gap-2 text-xl md:text-2xl font-black text-slate-900 dark:text-slate-100">
-            <Clock className="text-blue-500" /> 최근 올라온 이야기
-          </h3>
-          <Link href="/library" className="text-sm font-bold text-slate-400 hover:text-blue-500 transition">모두 보기</Link>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {DUMMY_STORIES.map((story) => (
-            <StoryCard key={story.id} story={story} />
-          ))}
-        </div>
-      </section>
+      {/* ... 배너 영역 ... */}
 
-      {/* --- 섹션 3: 유저 추천 (is_public 기반) --- */}
-      <section className="px-4 md:px-10 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h3 className="flex items-center gap-2 text-xl md:text-2xl font-black text-slate-900 dark:text-slate-100">
-            <Sparkles className="text-amber-500" /> 당신을 위한 추천 작품
-          </h3>
+      <section className="max-w-7xl mx-auto px-8 py-20">
+        <div className="flex justify-between items-end mb-10">
+          <div>
+            <h3 className="text-3xl font-black text-slate-900 mb-2">지금 연재 중인 소설 ✨</h3>
+            <p className="text-slate-500">다른 작가님들의 상상력을 엿보세요.</p>
+          </div>
         </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* 추천 로직은 현재 더미로 역순 배치 */}
-          {[...DUMMY_STORIES].reverse().map((story) => (
-            <StoryCard key={`rec-${story.id}`} story={story} />
-          ))}
-        </div>
-      </section>
 
-      {/* 하단 시작하기 CTA */}
-      <div className="mt-20 flex justify-center px-4">
-        <Link 
-          href="/write" 
-          className="group flex items-center gap-3 px-10 py-5 bg-blue-600 text-white rounded-full font-black text-xl hover:bg-blue-500 transition shadow-2xl shadow-blue-500/20"
-        >
-          나만의 소설 집필하기 <ArrowRight className="group-hover:translate-x-1 transition-transform" />
-        </Link>
-      </div>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-pulse">
+            {[1, 2, 3].map(i => <div key={i} className="h-64 bg-slate-100 rounded-3xl" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {publicStories.map((story) => (
+              <Link href={`/stories/${story.id}`} key={story.id}>
+                <StoryCard story={story} />
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
     </main>
   );
 }
 
-// --- 소설 카드 컴포넌트 ---
+// StoryCard에서 더미 데이터 필드(author 등)를 실제 DB 필드로 교체
 function StoryCard({ story }: { story: any }) {
   return (
-    <div className="group cursor-pointer bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 transition-all hover:-translate-y-2 hover:shadow-xl">
-      <div className="aspect-[3/4] bg-slate-200 dark:bg-slate-800 rounded-2xl mb-4 overflow-hidden relative">
-        <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:scale-110 transition-transform">
-          <BookOpen size={64} />
-        </div>
-        <span className="absolute top-3 left-3 px-3 py-1 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-full text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">
-          {story.genre}
+    <div className="p-5 group cursor-pointer border border-slate-100 ...">
+      <div className="aspect-[3/4] ... relative">
+        <span className="absolute top-3 left-3 px-3 py-1  ...">
+          {story.genre_desc || '장르 미정'}
         </span>
       </div>
-      <h4 className="font-black text-lg text-slate-800 dark:text-slate-100 mb-1 truncate">{story.title}</h4>
-      <div className="flex items-center justify-between text-xs text-slate-400 font-bold uppercase tracking-tighter">
-        <span>By {story.author}</span>
-        <span className="flex items-center gap-1"><BookOpen size={12}/> {story.views.toLocaleString()}</span>
-      </div>
+      <h4 className="font-black text-xl text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1">
+        {story.title}
+      </h4>
+      <p className="text-slate-500 text-sm mt-2 line-clamp-2 leading-relaxed">
+        {story.summary}
+      </p>
     </div>
   );
 }

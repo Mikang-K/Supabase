@@ -67,6 +67,40 @@ export default function NovelGenerator({ characters, userId }: any) {
     }
   };
 
+  const handleGenerateRLM = async () => {
+    if (selectedChars.length === 0 && manualChars.length === 0) return alert('등장인물을 최소 한 명은 설정해 주세요.');
+    if (!genreDesc.trim()) return alert('집필 지침을 작성해 주세요.');
+    
+    setLoading(true);
+    const supabase = createClient();
+
+    try {
+      const { data, error } = await supabase.functions.invoke('rlm-novel-writer', {
+        body: { 
+          user_id: userId,
+          character_ids: selectedChars.map(c => c.id),
+          manual_characters: manualChars,
+          user_title: userTitle,
+          relationship_desc: relationshipDesc,
+          genre_desc: genreDesc,
+          total_episodes: totalEpisodes,
+          mode: 'generate',
+        },
+      });
+
+      console.log("=== Edge Function Full Response ===");
+      console.log("Data:", data);
+      console.log("Error:", error);
+
+      if (error) throw error;
+      router.push(`/stories/${data.story_id}`);
+    } catch (err: any) {
+      alert(`집필 오류: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-10 max-w-5xl mx-auto pb-20">
       {/* 상단 제목 및 설정 */}
@@ -197,6 +231,13 @@ export default function NovelGenerator({ characters, userId }: any) {
             className="w-full py-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-3xl transition shadow-xl flex items-center justify-center gap-3"
           >
             {loading ? "고스트라이터가 집필 중..." : <><Sparkles size={20}/> 집필 시작하기</>}
+          </button>
+          <button
+            onClick={handleGenerateRLM}
+            disabled={loading || !genreDesc.trim()}
+            className="w-full py-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-3xl transition shadow-xl flex items-center justify-center gap-3"
+          >
+            {loading ? "고스트라이터가 집필 중..." : <><Sparkles size={20}/> 집필 시작하기(RLM 테스트)</>}
           </button>
         </div>
       </div>

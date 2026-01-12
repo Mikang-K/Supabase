@@ -186,6 +186,9 @@ Deno.serve(async (req) => {
         content: parsed.content, 
         order_index: 1 });
       }
+
+      await supabaseClient.from('wallets').update({ balance: wallet.balance - 1 }).eq('user_id', user_id);
+      console.log("Token Changed: ", wallet.balance); // 디버그용 파싱된 JSON 데이터 로그
       
       return new Response(JSON.stringify({ ...parsed, story_id: finalStoryId }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -199,6 +202,4 @@ Deno.serve(async (req) => {
       });
     }
 
-    await supabaseClient.from('wallets').update({ balance: wallet.balance - 1 }).eq('user_id', user_id);
-    console.log("Token Changed: ", wallets.balance); // 디버그용 파싱된 JSON 데이터 로그
 });

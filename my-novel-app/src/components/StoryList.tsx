@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { Lock, Globe } from 'lucide-react';
 import Link from 'next/link';
 
 export default function StoryList({ userId }: { userId: string }) {
@@ -23,6 +24,24 @@ export default function StoryList({ userId }: { userId: string }) {
   useEffect(() => {
     fetchStories();
   }, [userId]);
+
+  const togglePublic = async (e: React.MouseEvent, storyId: string, currentStatus: boolean) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const { error } = await supabase
+      .from('stories')
+      .update({ is_public: !currentStatus })
+      .eq('id', storyId);
+
+    if (error) {
+      alert('상태 변경 실패: ' + error.message);
+    } else {
+      setStories(prev => prev.map(s => 
+        s.id === storyId ? { ...s, is_public: !currentStatus } : s
+      ));
+    }
+  };
 
   const handleDelete = async (e: React.MouseEvent, storyId: string) => {
     e.preventDefault(); 
@@ -72,7 +91,6 @@ export default function StoryList({ userId }: { userId: string }) {
                 </span>
               </div>
             </Link>
-            
             {/* 삭제 버튼: Link 위에 띄움 */}
             <button 
               onClick={(e) => handleDelete(e, story.id)}
@@ -83,6 +101,15 @@ export default function StoryList({ userId }: { userId: string }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
+            <button 
+                onClick={(e) => togglePublic(e, story.id, story.is_public)}
+                className={`p-2 rounded-full transition-colors ${
+                  story.is_public ? 'text-blue-500 hover:bg-blue-50' : 'text-slate-300 hover:bg-slate-100'
+                }`}
+                title={story.is_public ? "공개 중" : "비공개 상태"}
+              >
+                {story.is_public ? <Globe size={20} /> : <Lock size={20} />}
+              </button>
           </div>
         ))
       )}
