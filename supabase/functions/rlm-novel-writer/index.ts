@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
             const target = history.find(h => h.order_index === task.idx);
             if (!target) continue;
 
-            const examSystem = "당신은 의뢰인(사용자)의 요구를 완벽하게 문장으로 구현하는 익명의 고스트라이터입니다. 원문에서 질문에 해당하는 핵심 정보만 한 문장으로 추출하세요.";
+            const examSystem = "당신은 소설 데이터베이스 분석가입니다. 원문에서 질문에 해당하는 핵심 정보를 문장으로 추출하세요.";
             const examUser = `원문: ${target.content}\n질문: ${task.reason}`;
             
             const summary = await callGemini(examSystem, examUser, false); // 텍스트로 받음
@@ -95,10 +95,10 @@ Deno.serve(async (req) => {
     let userMsg = "";
 
     if (isNewStory) {
-      systemMsg = `당신은 의뢰인(사용자)의 요구를 완벽하게 문장으로 구현하는 익명의 고스트라이터입니다. 첫 화이므로 세계관과 인물을 매력적으로 도입하세요. 문학적이고 서정적인 산문체. 인물의 내면 심리를 현미경처럼 들여다보는 집요한 묘사의 문체 사용합니다.`;
+      systemMsg = `당신은 의뢰인(사용자)의 요구를 완벽하게 문장으로 구현하는 익명의 고스트라이터입니다. 세계관과 인물의 도입부를 웹소설 형식으로 작성합니다. 문학적이고 서정적인 산문체. 인물의 내면 심리를 현미경처럼 들여다보는 집요한 묘사의 문체 사용합니다. 직접적인 성격 묘사(MBTI, 형용사 등) 금지. 인물의 습관, 시선의 높이, 주변 사물의 상태, 은유를 통해서만 인물의 상태를 암시할 것`;
       userMsg = `제목: ${user_title}\n장르: ${genre_desc}\n등장인물: ${manual_characters.join(', ')}\n위 정보를 바탕으로 소설의 1화를 1500자 내외로 집필하고 JSON으로 응답하세요.`;
     } else {
-      systemMsg = `당신은 의뢰인(사용자)의 요구를 완벽하게 문장으로 구현하는 익명의 고스트라이터입니다. 제공된 과거 기록과 일관성을 유지하세요. 문학적이고 서정적인 산문체. 인물의 내면 심리를 현미경처럼 들여다보는 집요한 묘사의 문체를 사용합니다.`;
+      systemMsg = `당신은 의뢰인(사용자)의 요구를 완벽하게 문장으로 구현하는 익명의 고스트라이터입니다. 제공된 과거 기록과 일관성을 유지하여 웹소설을 작성합니다. 문학적이고 서정적인 산문체. 인물의 내면 심리를 현미경처럼 들여다보는 집요한 묘사의 문체를 사용합니다. 직접적인 성격 묘사(MBTI, 형용사 등) 금지. 인물의 습관, 시선의 높이, 주변 사물의 상태, 은유를 통해서만 인물의 상태를 암시할 것`;
       userMsg = `[추출된 과거 복선]\n${contextSnippets.join('\n')}\n\n[이전 줄거리]\n${lastEpisode?.content.substring(0, 500)}\n\n[다음 지침]\n${next_direction}\n\n위 내용을 이어 제 ${lastEpisode!.order_index + 1}화를 1500자 내외로 집필하고 JSON으로 응답하세요.`;
     }
 

@@ -1,10 +1,10 @@
 // src/components/StoryViewer.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/utils/supabase/client';
-import { Lightbulb, ChevronLeft, ChevronRight, Sparkles, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import { Lightbulb, ChevronLeft, ChevronRight, Sparkles, MessageSquare, RotateCcw} from 'lucide-react';
 
 export default function StoryViewer({ initialStory, initialContents, userId }: any) {
   const [currentPage, setCurrentPage] = useState(initialContents.length - 1);
@@ -14,6 +14,12 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
   const [currentOptions, setCurrentOptions] = useState<string[]>(initialStory.next_options || []);
   const [showOptions, setShowOptions] = useState(false);
   const supabase = createClient();
+
+  const topRef = useRef<HTMLDivElement>(null);
+
+  const scrollToTop = () => {
+    topRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const handleContinue = async () => {
     if (loading) return;
@@ -36,6 +42,7 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
       setCurrentPage(contents.length);
       setNextDirection('');
       setShowOptions(false);
+      scrollToTop();
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -64,6 +71,7 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
       setCurrentPage(contents.length);
       setNextDirection('');
       setShowOptions(false);
+      scrollToTop();
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -71,6 +79,46 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
     }
   };
 
+  const handleRewrite = async () => {
+    if (loading || !confirm('현재 화의 내용을 버리고 다시 작성하시겠습니까?')) return;
+    setLoading(true);
+
+    try {
+      // 재작성은 마지막 페이지에서만 가능하도록 처리 (데이터 정합성 위해)
+      if (currentPage !== contents.length - 1) {
+        throw new Error("가장 최신 화만 재작성할 수 있습니다.");
+      }
+
+      const { data, error } = await supabase.functions.invoke('generate-novel', {
+        body: { 
+          user_id: userId,
+          story_id: initialStory.id,
+          mode: 'rewrite', // 재작성 모드 전달
+          // 재작성 시에도 지침이 있다면 반영, 없다면 이전 지침 활용 (Edge Function에서 처리)
+          next_direction: nextDirection, 
+          genre_desc: initialStory.genre_desc,
+        },
+      });
+
+      if (error) throw error;
+      
+      // 현재 페이지의 내용만 교체
+      const updatedContents = [...contents];
+      updatedContents[currentPage] = data;
+      setContents(updatedContents);
+      setContents([...contents, data]);
+      setCurrentPage(contents.length);
+      setNextDirection('');
+      setShowOptions(false);
+      setCurrentOptions(data.next_options || []);
+      
+      scrollToTop();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="pt-11 md:pt-5 max-w-4xl mx-auto px-2 md:px-0">
@@ -103,6 +151,19 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
           <div className="text-slate-300 font-black text-[10px] uppercase tracking-widest hidden sm:block">Ghostwriter Service</div>
         </footer>
       </div>
+
+      {/* 재작성 버튼 (최신 화를 보고 있을 때만 표시) */}
+             {userId === initialStory?.user_id && currentPage === contents.length - 1 && (
+              <button 
+                onClick={handleRewrite}
+                disabled={loading}
+                className="flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-blue-500 transition-colors"
+                title="현재 화 재작성"
+              >
+                <RotateCcw size={14} className={loading ? 'animate-spin' : ''} />
+                <span className="hidden sm:inline">재작성</span>
+              </button>
+            )}
 
       {userId === initialStory?.user_id && !initialStory.is_finished && currentPage === contents.length - 1 && (
         <div className="mt-8 md:mt-12 space-y-6 pb-10">

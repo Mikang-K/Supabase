@@ -73,8 +73,9 @@ Deno.serve(async (req) => {
           .from('story_contents')
           .select('*', { count: 'exact', head: true })
           .eq('story_id', story_id);
-        currentEpisode = (count || 0) + 1;
+        currentEpisode = mode === 'rewrite' ? (count || 1) : (count || 0) + 1;
       }
+
     }
     const displayTitle = user_title || storyInfo?.title || "새로운 이야기";
     const displayGenre = storyInfo?.genre_desc || genre_desc;
@@ -98,30 +99,46 @@ Deno.serve(async (req) => {
     // 3. AI 요청 프롬프트
     const systemInstruction = `
 [페르소나: 전문 고스트라이터]
-- 아이덴티티: 의뢰인(사용자)의 요구를 완벽하게 문장으로 구현하는 익명의 고스트라이터.
-- 태도: 정중하고 냉철하며, 오로지 의뢰인의 예술적 비전을 훼손하지 않고 극대화하는 데 집중함.
+- 아이덴티티: 의뢰인의 예술적 비전을 훼손하지 않고 완벽한 문장으로 구현하는 냉철한 전문가.
+- 태도: 설정의 무결성을 최우선으로 하며, 정중하고 집요하게 인물의 심리를 추적함.
 
-[작품 정보]
+[절대 준수 규칙: 캐릭터 무결성]
+※ 다음 규칙을 어길 시 서사의 개연성이 파괴된 것으로 간주합니다.
+1. 성별 및 연령 고정: [등장인물 상세 프로필]에 명시된 성별과 연령대를 100% 유지하십시오. 
+2. 장르 편향 금지: 로맨스 등 특정 장르의 관습(Cliché)보다 아래 정의된 캐릭터 설정을 우선합니다. 여성 헌터를 남성으로 바꾸거나, 성인 캐릭터를 아이로 취급하는 등의 왜곡을 엄격히 금지합니다.
+3. 호칭 및 인칭: 각 캐릭터의 성별에 맞는 정확한 인칭 대명사(그녀/그, 소년/소녀 등)를 사용하십시오.
+
+[작품 메타데이터]
 - 제목: ${displayTitle || "자동 생성"}
 - 장르 및 분위기: ${displayGenre}
-- 등장인물: ${presetCharacters?.map(c => c.name).join(', ')}${manualCharContext}
-- 인물 관계: ${relationship_desc}
-- 현재 화수: ${currentEpisode}화 / 총 ${total_episodes}화
+- 현재 진행: ${currentEpisode}화 / 총 ${total_episodes}화
 
-[집필 규칙]
-- 문체: 문학적이고 서정적인 산문체. 인물의 내면 심리를 현미경처럼 들여다보는 집요한 묘사.
-- 금기: 이미 사용한 소재는 반복하지 않으며, 이전 설정을 유지하며 매번 새로운 에피소드를 구성합니다. 직접적인 성격 묘사(MBTI, 형용사 등) 금지. 인물의 습관, 시선의 높이, 주변 사물의 상태, 은유를 통해서만 인물의 상태를 암시할 것.
-- 이번 화 지시: ${next_direction || "이야기를 시작하세요."}
-- ${isFinalEpisode ? "완결 회차입니다. 서사를 마무리하세요." : "다음 화가 기대되도록 끝맺음하세요."}
+[등장인물 상세 프로필]
+${presetCharacters?.map(c => `
+■ ${c.name}
+- 정체성: ${c.age_group} ${c.gender} (절대 고정)
+- 상세 설정: ${c.description}
+`).join('\n')}
+${manualCharContext}
 
-[출력 규칙]
-반드시 아래 JSON 형식으로만 응답하며, JSON형식 이외의 추가 문구를 절대로 작성하지 않도록 합니다.
--출력 예시:
+[인물 관계 및 상황]
+- 관계도: ${relationship_desc}
+- 현재 진행: ${currentEpisode} / 총 ${total_episodes}화
+
+[집필 가이드라인]
+- 문체: 문학적이고 서정적인 산문체. 웹소설 형식을 따르되 문장의 품격을 유지함.
+- 묘사 원칙: 직접적인 형용사(예: '다정하다', '슬프다') 사용 금지. 인물의 습관, 시선의 높이, 주변 사물의 상태, 은유를 통해서만 상태를 암시할 것.
+- 전개: 이전 설정과 모순되지 않는 새로운 에피소드 구성. 
+- 이번 화 지시: ${next_direction || "이야기를 시작하거나 자연스럽게 이어가세요."}
+- 마무리: ${isFinalEpisode ? "완결 회차입니다. 여운을 남기며 서사를 마무리하세요." : "독자의 궁금증을 자극하는 절정에서 끝을 맺으세요."}
+
+[출력 규칙: JSON Only]
+반드시 아래 JSON 형식으로만 응답하며, 추가 문구를 절대로 작성하지 마십시오.
 {
   "title": "소제목",
-  "content": "2000자 내외의 본문 내용",
+  "content": "1500자 내외의 본문 내용",
   "summary": "전체 줄거리 요약",
-  "next_options": ["다음 전개 제안 1", "다음 전개 제안 2", "다음 전개 제안 3"],
+  "next_options": ["전개 제안 1", "전개 제안 2", "전개 제안 3"],
   "is_finished": ${isFinalEpisode}
 }`;
 
@@ -167,6 +184,22 @@ Deno.serve(async (req) => {
         summary: parsed.summary, 
         next_options: parsed.next_options 
       }).eq('id', story_id);
+    }else if (mode === 'rewrite' && story_id) {
+      // 현재 화(currentEpisode)의 내용을 업데이트
+      const { error: updateError } = await supabaseClient
+        .from('story_contents')
+        .update({ content: parsed.content })
+        .eq('story_id', story_id)
+        .eq('order_index', currentEpisode);
+
+      if (updateError) throw updateError;
+
+      // 요약 및 추천 옵션도 최신화
+      await supabaseClient.from('stories').update({ 
+        summary: parsed.summary, 
+        next_options: parsed.next_options 
+      }).eq('id', story_id);
+
     } else {
       const { data: newStory } = await supabaseClient.from('stories').insert({ 
         user_id, 

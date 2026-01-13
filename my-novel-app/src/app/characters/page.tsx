@@ -9,6 +9,8 @@ export default function CharacterManagement() {
   const [characters, setCharacters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
+  const [gender, setGender] = useState("여성"); // 여성, 남성, 기타
+  const [ageGroup, setAgeGroup] = useState("성인"); // 아이, 소년/소녀, 성인, 노인
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState('');
   const [style, setStyle] = useState('');
@@ -50,7 +52,7 @@ export default function CharacterManagement() {
 
     if (error) alert(error.message);
     else {
-      setName(''); setDescription(''); setTags(''); setStyle('');
+      setName(''); setDescription(''); setTags(''); setStyle(''); setGender(''); setAgeGroup('');
       fetchCharacters();
     }
   };
@@ -78,9 +80,31 @@ export default function CharacterManagement() {
               className="w-full p-4 bg-slate-50 rounded-xl outline-none focus:ring-2 ring-blue-500 border-none"
               placeholder="이름 (예: 제로)" value={name} onChange={e => setName(e.target.value)} required
             />
+            <div className="flex gap-2">
+            {/* 성별 선택 */}
+              <select 
+                className="p-2 bg-slate-50 rounded-lg border-none focus:ring-2 ring-blue-500"
+                value={gender} onChange={e => setGender(e.target.value)}
+              >
+                <option value="여성">여성</option>
+                <option value="남성">남성</option>
+                <option value="무성">무성</option>
+              </select>
+
+              {/* 연령대 선택 */}
+              <select 
+                className="p-2 bg-slate-50 rounded-lg border-none focus:ring-2 ring-blue-500"
+                value={ageGroup} onChange={e => setAgeGroup(e.target.value)}
+              >
+                <option value="성인">성인</option>
+                <option value="아이">아이</option>
+                <option value="소년/소녀">소년/소녀</option>
+                <option value="노인">노인</option>
+              </select>
+            </div>
             <textarea 
               className="w-full p-4 bg-slate-50 rounded-xl outline-none focus:ring-2 ring-blue-500 border-none h-24"
-              placeholder="캐릭터 설명 (나이, 외모, 배경 등)" value={description} onChange={e => setDescription(e.target.value)} required
+              placeholder="캐릭터 설명 (직업, 외모, 배경 등)" value={description} onChange={e => setDescription(e.target.value)} required
             />
             <input 
               className="w-full p-4 bg-slate-50 rounded-xl outline-none focus:ring-2 ring-blue-500 border-none"
