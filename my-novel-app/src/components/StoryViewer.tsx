@@ -50,35 +50,6 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
     }
   };
 
-  const handleContinueRLM = async () => {
-    if (loading) return;
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('rlm-novel-writer', {
-        body: { 
-          user_id: userId,
-          story_id: initialStory.id,
-          mode: 'continue',
-          next_direction: nextDirection,
-          genre_desc: initialStory.genre_desc,
-        },
-      });
-
-      if (error) throw error;
-      
-      setContents([...contents, data]);
-      setCurrentOptions(data.next_options || []);
-      setCurrentPage(contents.length);
-      setNextDirection('');
-      setShowOptions(false);
-      scrollToTop();
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleRewrite = async () => {
     if (loading || !confirm('현재 화의 내용을 버리고 다시 작성하시겠습니까?')) return;
     setLoading(true);
@@ -208,13 +179,6 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
               className="w-full my-3 py-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-3xl transition shadow-xl flex items-center justify-center gap-3"
             >
               {loading ? "집필 중..." : <><Sparkles size={20}/> 다음 화 연재하기</>}
-            </button>
-            <button 
-              onClick={handleContinueRLM} 
-              disabled={loading}
-              className="w-full py-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-3xl transition shadow-xl flex items-center justify-center gap-3"
-            >
-              {loading ? "집필 중..." : <><Sparkles size={20}/> 다음 화 연재하기(RLM 테스트)</>}
             </button>
           </div>
         </div>
