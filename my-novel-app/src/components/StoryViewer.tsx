@@ -32,6 +32,7 @@ export default function StoryViewer({ initialStory, initialContents, userId }: a
           mode: 'continue',
           next_direction: nextDirection,
           genre_desc: initialStory.genre_desc,
+          summary: initialStory.summary
         },
       });
 

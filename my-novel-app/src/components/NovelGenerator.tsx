@@ -12,8 +12,8 @@ export default function NovelGenerator({ characters, userId }: any) {
   const [manualChars, setManualChars] = useState<string[]>([]);
   const [charInput, setCharInput] = useState('');
   
-  // 탭 관련 상태 (3D, 2D, CUSTOM, MANUAL)
-  const [activeTab, setActiveTab] = useState<'3D' | '2D' | 'CUSTOM' | 'MANUAL'>('3D');
+  // 탭 관련 상태 (CUSTOM, MANUAL)
+  const [activeTab, setActiveTab] = useState<'CUSTOM' | 'MANUAL'>('CUSTOM');
 
   const [userTitle, setUserTitle] = useState('');
   const [relationshipDesc, setRelationshipDesc] = useState('');
@@ -23,7 +23,7 @@ export default function NovelGenerator({ characters, userId }: any) {
 
   // 대분류 필터링 로직
   const filteredCharacters = useMemo(() => {
-    return characters.filter((c: any) => c.category === activeTab);
+    return characters;
   }, [characters, activeTab]);
 
   const addManualCharacter = () => {
@@ -107,7 +107,7 @@ export default function NovelGenerator({ characters, userId }: any) {
 
             {/* 탭 네비게이션 */}
             <div className="flex bg-slate-100 p-1 rounded-2xl">
-              {(['3D', '2D', 'CUSTOM', 'MANUAL'] as const).map((tab) => (
+              {([ 'CUSTOM', 'MANUAL'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}

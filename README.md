@@ -22,9 +22,3 @@
 1. **Frontend (Vercel)**: 사용자의 입력값을 받아 Supabase Edge Function을 호출합니다.
 2. **Edge Function (Supabase)**: 보안이 강화된 환경에서 Gemini API를 호출하고, 응답받은 JSON 데이터를 파싱하여 DB 처리와 클라이언트 응답을 동시에 수행합니다.
 3. **Database (PostgreSQL)**: 유저 정보, 지갑 잔액, 소설 본문 및 설정을 구조화하여 관리합니다.
-
-## 🚀 How to Run (Local)
-1. Repository 클론
-2. `npm install`
-3. `.env.local` 파일 생성 및 Supabase Key 설정
-4. `npm run dev`

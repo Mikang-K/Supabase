@@ -32,7 +32,8 @@ Deno.serve(async (req) => {
       manual_characters = [], // 직접 작성한 인물 리스트
       user_id, 
       story_id, 
-      mode = 'generate', 
+      mode = 'generate',
+      summary = "", 
       user_title = "",
       relationship_desc = "",
       genre_desc = "판타지",
@@ -59,6 +60,8 @@ Deno.serve(async (req) => {
 
     // 2. 현재 화수 계산
     let currentEpisode = 1;
+    let summaryPrev = "";
+
     if (story_id) {
       const { data: existingStory, error: storyError } = await supabaseClient
         .from('stories')
@@ -74,22 +77,24 @@ Deno.serve(async (req) => {
           .select('*', { count: 'exact', head: true })
           .eq('story_id', story_id);
         currentEpisode = mode === 'rewrite' ? (count || 1) : (count || 0) + 1;
+        summaryPrev = storyInfo.summary || "";
       }
-
     }
+
     const displayTitle = user_title || storyInfo?.title || "새로운 이야기";
     const displayGenre = storyInfo?.genre_desc || genre_desc;
 
+    
     let presetNames = "";
-
+    
     if (character_ids?.length > 0) {
       const { data: chars } = await supabaseClient.from('characters').select('name').in("id", character_ids);
       presetNames = chars?.map(c => c.name).join(', ') || "";
     }
     const manualCharContext = manual_characters.length > 0 ? `, ${manual_characters.join(', ')}` : "";
-
+    
     const isFinalEpisode = currentEpisode >= total_episodes;
-
+    
     //AI 프롬프트 구성
     const formattedPresets = presetCharacters.map(c => {
     const tags = c.personality_tags ? `\n  - Personality: ${c.personality_tags.join(', ')}` : '';
@@ -143,6 +148,7 @@ Deno.serve(async (req) => {
           - Direction: 주인공들이 등장하는 도입부
 
           [Characters]
+          There are multiple characters involved. Track each character's location and current status carefully to avoid logical contradictions.
           ■ 백호우 (청년/남성)
             - Description: 냉철하고 빈틈없는 젊은 검사. '백호'라는 별명을 가짐.
             - Personality: 정중함, 엄격함, 예리함
@@ -171,6 +177,7 @@ Deno.serve(async (req) => {
           - Direction: 평화로운 아침, 남동생이 까마귀들에게 납치당하는 도입부
 
           [Characters]
+          There are multiple characters involved. Track each character's location and current status carefully to avoid logical contradictions.
           ■ 프루 (청년/여성)
             - Description: 관찰력이 뛰어나고 책임감이 강한 소녀.
             - Personality: 신중함, 분석적임
@@ -208,9 +215,11 @@ Deno.serve(async (req) => {
               - Title: ${displayTitle}
               - Genre: ${displayGenre}
               - Progress: ${currentEpisode} / ${total_episodes}
+              - Summary: ${summaryPrev}
               - is_finished: ${isFinalEpisode}
 
               [Characters]
+              There are multiple characters involved. Track each character's location and current status carefully to avoid logical contradictions.
               ${charContext}
 
               [Current Context]
@@ -309,7 +318,7 @@ Deno.serve(async (req) => {
       
     }
     catch (error: any) {
-      console.error("Database Transaction Error:", error.message);
+      console.error("Error:", error.message);
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
